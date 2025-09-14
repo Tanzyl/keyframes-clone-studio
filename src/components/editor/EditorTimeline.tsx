@@ -1,0 +1,250 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Play, 
+  Pause, 
+  SkipBack, 
+  SkipForward, 
+  Volume2,
+  Plus,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock
+} from "lucide-react";
+
+interface EditorTimelineProps {
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  onTimeChange: (time: number) => void;
+  onDurationChange: (duration: number) => void;
+  onPlayPause: () => void;
+  selectedLayer: string | null;
+  onLayerSelect: (layerId: string | null) => void;
+}
+
+const mockTimelineLayers = [
+  {
+    id: "layer1",
+    name: "Welcome Text",
+    type: "text",
+    visible: true,
+    locked: false,
+    startTime: 0,
+    endTime: 5,
+    color: "#3b82f6"
+  },
+  {
+    id: "layer2",
+    name: "Background Shape",
+    type: "shape",
+    visible: true,
+    locked: false,
+    startTime: 1,
+    endTime: 8,
+    color: "#10b981"
+  },
+  {
+    id: "layer3",
+    name: "Background Music",
+    type: "audio",
+    visible: true,
+    locked: false,
+    startTime: 0,
+    endTime: 30,
+    color: "#f59e0b"
+  },
+];
+
+export const EditorTimeline = ({
+  currentTime,
+  duration,
+  isPlaying,
+  onTimeChange,
+  onPlayPause,
+  selectedLayer,
+  onLayerSelect
+}: EditorTimelineProps) => {
+  const [volume, setVolume] = useState([80]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="h-64 bg-surface-1 border-t border-border flex flex-col">
+      {/* Timeline Controls */}
+      <div className="h-12 border-b border-border flex items-center justify-between px-4">
+        <div className="flex items-center space-x-4">
+          {/* Playback Controls */}
+          <div className="flex items-center space-x-2">
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+              <SkipBack className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="default" onClick={onPlayPause} className="h-8 w-8 p-0">
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+              <SkipForward className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Time Display */}
+          <div className="text-sm text-muted-foreground">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </div>
+
+          {/* Volume Control */}
+          <div className="flex items-center space-x-2">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
+            <div className="w-20">
+              <Slider
+                value={volume}
+                onValueChange={setVolume}
+                max={100}
+                step={1}
+                className="h-6"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Actions */}
+        <div className="flex items-center space-x-2">
+          <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">
+            <Plus className="h-4 w-4 mr-1" />
+            Add Layer
+          </Button>
+        </div>
+      </div>
+
+      {/* Timeline Area */}
+      <div className="flex-1 flex">
+        {/* Layer List */}
+        <div className="w-48 border-r border-border">
+          <div className="h-8 bg-surface-2 border-b border-border flex items-center px-3">
+            <span className="text-xs font-medium text-muted-foreground">LAYERS</span>
+          </div>
+          <ScrollArea className="h-[calc(100%-2rem)]">
+            {mockTimelineLayers.map((layer) => (
+              <div
+                key={layer.id}
+                className={`h-12 border-b border-border/50 flex items-center px-3 cursor-pointer transition-colors ${
+                  selectedLayer === layer.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-surface-2'
+                }`}
+                onClick={() => onLayerSelect(layer.id)}
+              >
+                <div className="flex items-center space-x-2 flex-1">
+                  <div
+                    className="w-3 h-3 rounded-sm"
+                    style={{ backgroundColor: layer.color }}
+                  />
+                  <span className="text-sm text-foreground truncate flex-1">
+                    {layer.name}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Toggle visibility
+                    }}
+                  >
+                    {layer.visible ? (
+                      <Eye className="h-3 w-3" />
+                    ) : (
+                      <EyeOff className="h-3 w-3" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Toggle lock
+                    }}
+                  >
+                    {layer.locked ? (
+                      <Lock className="h-3 w-3" />
+                    ) : (
+                      <Unlock className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </ScrollArea>
+        </div>
+
+        {/* Timeline Tracks */}
+        <div className="flex-1 overflow-x-auto">
+          {/* Time Ruler */}
+          <div className="h-8 bg-surface-2 border-b border-border relative">
+            <div className="flex h-full">
+              {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-20 border-r border-border/30 flex items-center justify-center">
+                  <span className="text-xs text-muted-foreground">{i}s</span>
+                </div>
+              ))}
+            </div>
+            {/* Playhead */}
+            <div
+              className="absolute top-0 bottom-0 w-px bg-primary z-10"
+              style={{ left: `${(currentTime / duration) * (Math.ceil(duration) * 80)}px` }}
+            />
+          </div>
+
+          {/* Timeline Tracks */}
+          <ScrollArea className="h-[calc(100%-2rem)]">
+            {mockTimelineLayers.map((layer, index) => (
+              <div key={layer.id} className="h-12 border-b border-border/50 relative">
+                {/* Layer Track Background */}
+                <div className="absolute inset-0 flex">
+                  {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => (
+                    <div key={i} className="flex-shrink-0 w-20 border-r border-border/20" />
+                  ))}
+                </div>
+
+                {/* Layer Block */}
+                <div
+                  className={`absolute top-1 bottom-1 rounded-md border-2 transition-all cursor-pointer ${
+                    selectedLayer === layer.id 
+                      ? 'border-primary bg-primary/20' 
+                      : 'border-transparent hover:border-primary/50'
+                  }`}
+                  style={{
+                    left: `${(layer.startTime / duration) * (Math.ceil(duration) * 80)}px`,
+                    width: `${((layer.endTime - layer.startTime) / duration) * (Math.ceil(duration) * 80)}px`,
+                    backgroundColor: `${layer.color}20`
+                  }}
+                  onClick={() => onLayerSelect(layer.id)}
+                >
+                  <div className="h-full flex items-center px-2">
+                    <span className="text-xs text-foreground font-medium truncate">
+                      {layer.name}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Playhead */}
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-primary z-10 pointer-events-none"
+                  style={{ left: `${(currentTime / duration) * (Math.ceil(duration) * 80)}px` }}
+                />
+              </div>
+            ))}
+          </ScrollArea>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -48,12 +48,16 @@ export const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-sm font-medium">
-              Sign in
-            </Button>
-            <Button className="btn-hero text-sm">
-              Go to editor →
-            </Button>
+            <Link to="/auth">
+              <Button variant="ghost" className="text-sm font-medium">
+                Sign in
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button className="btn-hero text-sm">
+                Go to editor →
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -87,12 +91,16 @@ export const Header = () => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 px-4 pt-4 border-t border-border">
-                <Button variant="ghost" className="text-sm font-medium justify-start">
-                  Sign in
-                </Button>
-                <Button className="btn-hero text-sm">
-                  Go to editor →
-                </Button>
+                <Link to="/auth">
+                  <Button variant="ghost" className="text-sm font-medium justify-start">
+                    Sign in
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button className="btn-hero text-sm">
+                    Go to editor →
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
