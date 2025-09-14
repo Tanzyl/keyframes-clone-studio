@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Keyframes Studio brand colors
+        "brand-blue": {
+          DEFAULT: "hsl(var(--brand-blue))",
+          light: "hsl(var(--brand-blue-light))",
+          dark: "hsl(var(--brand-blue-dark))",
+        },
+        "surface-1": "hsl(var(--surface-1))",
+        "surface-2": "hsl(var(--surface-2))",
+        "surface-3": "hsl(var(--surface-3))",
+        "text-muted": "hsl(var(--text-muted))",
       },
       borderRadius: {
         lg: "var(--radius)",
