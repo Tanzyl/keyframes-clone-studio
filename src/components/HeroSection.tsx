@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import heroMockup from "@/assets/hero-editor-mockup.jpg";
 
 export const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 hero-grid">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
@@ -23,7 +26,10 @@ export const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-            <Button className="btn-hero text-lg px-8 py-4">
+            <Button 
+              className="btn-hero text-lg px-8 py-4"
+              onClick={() => navigate('/editor')}
+            >
               Try demo project
             </Button>
             <p className="text-sm text-muted-foreground self-center">

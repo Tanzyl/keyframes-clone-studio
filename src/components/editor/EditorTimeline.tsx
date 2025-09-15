@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Project } from "@/hooks/useProjects";
 import { 
   Play, 
   Pause, 
@@ -24,6 +25,7 @@ interface EditorTimelineProps {
   onPlayPause: () => void;
   selectedLayer: string | null;
   onLayerSelect: (layerId: string | null) => void;
+  currentProject: Project | null;
 }
 
 const mockTimelineLayers = [
@@ -66,7 +68,8 @@ export const EditorTimeline = ({
   onTimeChange,
   onPlayPause,
   selectedLayer,
-  onLayerSelect
+  onLayerSelect,
+  currentProject
 }: EditorTimelineProps) => {
   const [volume, setVolume] = useState([80]);
 

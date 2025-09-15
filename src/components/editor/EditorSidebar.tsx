@@ -1,28 +1,25 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  FolderOpen,
-  Image,
-  Video,
-  Music,
-  Type,
-  Shapes,
+  Upload, 
+  Image, 
+  Video, 
+  Music, 
+  Type, 
+  Shapes, 
   Sparkles,
   Search,
-  Upload,
-  Play,
-  Plus
+  Plus,
+  Trash2,
+  Download,
+  FolderOpen,
+  Play
 } from "lucide-react";
-
-const mediaItems = [
-  { id: 1, type: "image", name: "Background 1", duration: null, thumbnail: "/placeholder.svg" },
-  { id: 2, type: "video", name: "Intro Clip", duration: "5.2s", thumbnail: "/placeholder.svg" },
-  { id: 3, type: "audio", name: "Background Music", duration: "30s", thumbnail: null },
-  { id: 4, type: "image", name: "Logo", duration: null, thumbnail: "/placeholder.svg" },
-];
 
 const textTemplates = [
   { id: 1, name: "Animated Title", preview: "Sample Text" },
@@ -38,7 +35,31 @@ const shapes = [
 ];
 
 export const EditorSidebar = () => {
+  const { user } = useAuth();
+  const { mediaFiles, loading, uploading, uploadFile, deleteFile } = useMediaLibrary();
   const [searchTerm, setSearchTerm] = useState("");
+  const [mediaFilter, setMediaFilter] = useState("all");
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    for (let i = 0; i < files.length; i++) {
+      await uploadFile(files[i]);
+    }
+    
+    // Reset input
+    event.target.value = "";
+  };
+
+  const filteredMedia = mediaFiles.filter(file => {
+    const matchesSearch = file.filename.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = mediaFilter === "all" || 
+      (mediaFilter === "image" && file.file_type.startsWith('image/')) ||
+      (mediaFilter === "video" && file.file_type.startsWith('video/')) ||
+      (mediaFilter === "audio" && file.file_type.startsWith('audio/'));
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="w-80 bg-surface-1 border-r border-border flex flex-col">
@@ -73,48 +94,121 @@ export const EditorSidebar = () => {
         <div className="flex-1 overflow-hidden">
           <TabsContent value="media" className="h-full m-0">
             <div className="p-4 space-y-4 h-full flex flex-col">
-              <Button className="w-full" variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Media
-              </Button>
+              <label className="block">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,audio/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  disabled={uploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploading ? "Uploading..." : "Upload Media"}
+                </Button>
+              </label>
               
               <div className="flex space-x-2">
-                <Button size="sm" variant={searchTerm === "" ? "default" : "ghost"} className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant={mediaFilter === "all" ? "default" : "ghost"} 
+                  className="flex-1"
+                  onClick={() => setMediaFilter("all")}
+                >
                   All
                 </Button>
-                <Button size="sm" variant="ghost" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant={mediaFilter === "image" ? "default" : "ghost"} 
+                  className="flex-1"
+                  onClick={() => setMediaFilter("image")}
+                >
                   <Image className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant={mediaFilter === "video" ? "default" : "ghost"} 
+                  className="flex-1"
+                  onClick={() => setMediaFilter("video")}
+                >
                   <Video className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant={mediaFilter === "audio" ? "default" : "ghost"} 
+                  className="flex-1"
+                  onClick={() => setMediaFilter("audio")}
+                >
                   <Music className="h-4 w-4" />
                 </Button>
               </div>
 
               <ScrollArea className="flex-1">
+                {loading && (
+                  <div className="text-center text-muted-foreground py-8">
+                    Loading media...
+                  </div>
+                )}
+                
+                {!loading && filteredMedia.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    {searchTerm ? "No media found" : "Upload files to get started"}
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-2 gap-2">
-                  {mediaItems.map((item) => (
+                  {filteredMedia.map((file) => (
                     <div
-                      key={item.id}
+                      key={file.id}
                       className="relative group cursor-pointer border border-border rounded-lg p-2 hover:bg-surface-2 transition-colors"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/json', JSON.stringify(file));
+                      }}
                     >
-                      <div className="aspect-square bg-surface-2 rounded-md mb-2 flex items-center justify-center">
-                        {item.type === "image" && <Image className="h-6 w-6 text-muted-foreground" />}
-                        {item.type === "video" && <Video className="h-6 w-6 text-muted-foreground" />}
-                        {item.type === "audio" && <Music className="h-6 w-6 text-muted-foreground" />}
+                      <div className="aspect-square bg-surface-2 rounded-md mb-2 flex items-center justify-center overflow-hidden">
+                        {file.file_type.startsWith('image/') ? (
+                          <img 
+                            src={file.file_path} 
+                            alt={file.filename}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : file.file_type.startsWith('video/') ? (
+                          <Video className="h-6 w-6 text-blue-500" />
+                        ) : (
+                          <Music className="h-6 w-6 text-green-500" />
+                        )}
                       </div>
                       <div className="text-xs text-foreground font-medium truncate">
-                        {item.name}
+                        {file.filename}
                       </div>
-                      {item.duration && (
-                        <div className="text-xs text-muted-foreground">
-                          {item.duration}
-                        </div>
-                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {(file.file_size / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                      
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                        <Play className="h-4 w-4 text-white" />
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30"
+                            onClick={() => window.open(file.file_path, '_blank')}
+                          >
+                            <Download className="h-3 w-3 text-white" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30"
+                            onClick={() => deleteFile(file.id, file.file_path)}
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { Project } from "@/hooks/useProjects";
 import { 
   FileText, 
   Save, 
@@ -22,9 +24,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
-export const EditorHeader = () => {
-  const [projectName, setProjectName] = useState("Untitled Project");
+interface EditorHeaderProps {
+  currentProject: Project | null;
+  onProjectSave: (project: Project) => void;
+  projects: Project[];
+}
+
+export const EditorHeader = ({ currentProject, onProjectSave, projects }: EditorHeaderProps) => {
+  const { user, signOut } = useAuth();
+  const [projectName, setProjectName] = useState(currentProject?.title || "Untitled Project");
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="h-14 bg-surface-1 border-b border-border flex items-center justify-between px-4">
@@ -116,7 +129,7 @@ export const EditorHeader = () => {
             <DropdownMenuItem>Projects</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign Out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

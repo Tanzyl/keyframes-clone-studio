@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Project } from "@/hooks/useProjects";
 import { 
   ZoomIn, 
   ZoomOut, 
@@ -14,6 +15,7 @@ interface EditorCanvasProps {
   currentTime: number;
   selectedLayer: string | null;
   onLayerSelect: (layerId: string | null) => void;
+  currentProject: Project | null;
 }
 
 const mockLayers = [
@@ -45,7 +47,8 @@ export const EditorCanvas = ({
   selectedTool, 
   currentTime, 
   selectedLayer, 
-  onLayerSelect 
+  onLayerSelect,
+  currentProject
 }: EditorCanvasProps) => {
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(true);
