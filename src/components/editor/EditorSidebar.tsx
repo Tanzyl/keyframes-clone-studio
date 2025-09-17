@@ -1,25 +1,34 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMediaLibrary, MediaAsset } from "@/hooks/useMediaLibrary";
+import { Project } from "@/hooks/useProjects";
+import { Workspace } from "@/hooks/useWorkspaces";
 import { 
-  Upload, 
-  Image, 
-  Video, 
-  Music, 
-  Type, 
-  Shapes, 
-  Sparkles,
   Search,
+  Type,
+  Square,
+  Circle,
+  Triangle,
+  Image,
+  Video,
+  Music,
   Plus,
-  Trash2,
-  Download,
   FolderOpen,
-  Play
+  Upload,
+  Download,
+  Trash2,
+  Shapes,
+  Sparkles
 } from "lucide-react";
+
+interface EditorSidebarProps {
+  mediaAssets: MediaAsset[];
+  currentProject: Project | null;
+  currentWorkspace: Workspace | null;
+}
 
 const textTemplates = [
   { id: 1, name: "Animated Title", preview: "Sample Text" },
@@ -34,32 +43,44 @@ const shapes = [
   { id: 4, name: "Arrow", icon: "→" },
 ];
 
-export const EditorSidebar = () => {
-  const { user } = useAuth();
-  const { mediaFiles, loading, uploading, uploadFile, deleteFile } = useMediaLibrary();
-  const [searchTerm, setSearchTerm] = useState("");
+export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }: EditorSidebarProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState("all");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { uploadFile, uploading } = useMediaLibrary(currentWorkspace?.id);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || !currentProject) return;
 
-    for (let i = 0; i < files.length; i++) {
-      await uploadFile(files[i]);
+    for (const file of Array.from(files)) {
+      await uploadFile(file, currentProject.id);
     }
     
-    // Reset input
-    event.target.value = "";
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const filteredMedia = mediaFiles.filter(file => {
-    const matchesSearch = file.filename.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredAssets = mediaAssets.filter(asset => {
+    const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      asset.original_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = mediaFilter === "all" || 
-      (mediaFilter === "image" && file.file_type.startsWith('image/')) ||
-      (mediaFilter === "video" && file.file_type.startsWith('video/')) ||
-      (mediaFilter === "audio" && file.file_type.startsWith('audio/'));
+      (mediaFilter === "image" && asset.media_type === 'image') ||
+      (mediaFilter === "video" && asset.media_type === 'video') ||
+      (mediaFilter === "audio" && asset.media_type === 'audio');
     return matchesSearch && matchesFilter;
   });
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
     <div className="w-80 bg-surface-1 border-r border-border flex flex-col">
@@ -68,8 +89,8 @@ export const EditorSidebar = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search assets..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -94,23 +115,23 @@ export const EditorSidebar = () => {
         <div className="flex-1 overflow-hidden">
           <TabsContent value="media" className="h-full m-0">
             <div className="p-4 space-y-4 h-full flex flex-col">
-              <label className="block">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*,audio/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  disabled={uploading}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {uploading ? "Uploading..." : "Upload Media"}
-                </Button>
-              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*,audio/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {uploading ? "Uploading..." : "Upload Media"}
+              </Button>
               
               <div className="flex space-x-2">
                 <Button 
@@ -148,46 +169,48 @@ export const EditorSidebar = () => {
               </div>
 
               <ScrollArea className="flex-1">
-                {loading && (
+                {uploading && (
                   <div className="text-center text-muted-foreground py-8">
-                    Loading media...
+                    Uploading files...
                   </div>
                 )}
                 
-                {!loading && filteredMedia.length === 0 && (
+                {!uploading && filteredAssets.length === 0 && (
                   <div className="text-center text-muted-foreground py-8">
-                    {searchTerm ? "No media found" : "Upload files to get started"}
+                    {searchQuery ? "No media found" : "Upload files to get started"}
                   </div>
                 )}
                 
                 <div className="grid grid-cols-2 gap-2">
-                  {filteredMedia.map((file) => (
+                  {filteredAssets.map((asset) => (
                     <div
-                      key={file.id}
+                      key={asset.id}
                       className="relative group cursor-pointer border border-border rounded-lg p-2 hover:bg-surface-2 transition-colors"
                       draggable
                       onDragStart={(e) => {
-                        e.dataTransfer.setData('application/json', JSON.stringify(file));
+                        e.dataTransfer.setData('application/json', JSON.stringify(asset));
                       }}
                     >
                       <div className="aspect-square bg-surface-2 rounded-md mb-2 flex items-center justify-center overflow-hidden">
-                        {file.file_type.startsWith('image/') ? (
+                        {asset.media_type === 'image' && asset.file_url ? (
                           <img 
-                            src={file.file_path} 
-                            alt={file.filename}
+                            src={asset.file_url} 
+                            alt={asset.name}
                             className="w-full h-full object-cover"
                           />
-                        ) : file.file_type.startsWith('video/') ? (
+                        ) : asset.media_type === 'video' ? (
                           <Video className="h-6 w-6 text-blue-500" />
-                        ) : (
+                        ) : asset.media_type === 'audio' ? (
                           <Music className="h-6 w-6 text-green-500" />
+                        ) : (
+                          <FolderOpen className="h-6 w-6 text-muted-foreground" />
                         )}
                       </div>
                       <div className="text-xs text-foreground font-medium truncate">
-                        {file.filename}
+                        {asset.name}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {(file.file_size / 1024 / 1024).toFixed(1)} MB
+                        {formatFileSize(asset.file_size)}
                       </div>
                       
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
@@ -196,17 +219,9 @@ export const EditorSidebar = () => {
                             size="sm"
                             variant="ghost"
                             className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30"
-                            onClick={() => window.open(file.file_path, '_blank')}
+                            onClick={() => asset.file_url && window.open(asset.file_url, '_blank')}
                           >
                             <Download className="h-3 w-3 text-white" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30"
-                            onClick={() => deleteFile(file.id, file.file_path)}
-                          >
-                            <Trash2 className="h-3 w-3 text-white" />
                           </Button>
                         </div>
                       </div>

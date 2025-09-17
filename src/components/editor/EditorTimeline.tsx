@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Project } from "@/hooks/useProjects";
+import { TimelineTrack, TimelineItem, useTimeline } from "@/hooks/useTimeline";
 import { 
   Play, 
   Pause, 
@@ -26,6 +27,8 @@ interface EditorTimelineProps {
   selectedLayer: string | null;
   onLayerSelect: (layerId: string | null) => void;
   currentProject: Project | null;
+  tracks: TimelineTrack[];
+  items: TimelineItem[];
 }
 
 const mockTimelineLayers = [
@@ -69,9 +72,12 @@ export const EditorTimeline = ({
   onPlayPause,
   selectedLayer,
   onLayerSelect,
-  currentProject
+  currentProject,
+  tracks,
+  items
 }: EditorTimelineProps) => {
   const [volume, setVolume] = useState([80]);
+  const { createTrack } = useTimeline(currentProject?.id);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -119,9 +125,14 @@ export const EditorTimeline = ({
 
         {/* Timeline Actions */}
         <div className="flex items-center space-x-2">
-          <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-8 px-3 text-xs"
+            onClick={() => createTrack(`Track ${tracks.length + 1}`, 'video')}
+          >
             <Plus className="h-4 w-4 mr-1" />
-            Add Layer
+            Add Track
           </Button>
         </div>
       </div>
@@ -134,21 +145,20 @@ export const EditorTimeline = ({
             <span className="text-xs font-medium text-muted-foreground">LAYERS</span>
           </div>
           <ScrollArea className="h-[calc(100%-2rem)]">
-            {mockTimelineLayers.map((layer) => (
+            {tracks.map((track) => (
               <div
-                key={layer.id}
+                key={track.id}
                 className={`h-12 border-b border-border/50 flex items-center px-3 cursor-pointer transition-colors ${
-                  selectedLayer === layer.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-surface-2'
+                  selectedLayer === track.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-surface-2'
                 }`}
-                onClick={() => onLayerSelect(layer.id)}
+                onClick={() => onLayerSelect(track.id)}
               >
                 <div className="flex items-center space-x-2 flex-1">
                   <div
-                    className="w-3 h-3 rounded-sm"
-                    style={{ backgroundColor: layer.color }}
+                    className="w-3 h-3 rounded-sm bg-primary"
                   />
                   <span className="text-sm text-foreground truncate flex-1">
-                    {layer.name}
+                    {track.name}
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -161,7 +171,7 @@ export const EditorTimeline = ({
                       // Toggle visibility
                     }}
                   >
-                    {layer.visible ? (
+                    {track.is_visible ? (
                       <Eye className="h-3 w-3" />
                     ) : (
                       <EyeOff className="h-3 w-3" />
@@ -176,7 +186,7 @@ export const EditorTimeline = ({
                       // Toggle lock
                     }}
                   >
-                    {layer.locked ? (
+                    {track.is_locked ? (
                       <Lock className="h-3 w-3" />
                     ) : (
                       <Unlock className="h-3 w-3" />
@@ -185,6 +195,18 @@ export const EditorTimeline = ({
                 </div>
               </div>
             ))}
+            {tracks.length === 0 && (
+              <div className="p-8 text-center">
+                <p className="text-sm text-muted-foreground mb-2">No tracks yet</p>
+                <Button
+                  size="sm"
+                  onClick={() => createTrack('Video Track', 'video')}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Track
+                </Button>
+              </div>
+            )}
           </ScrollArea>
         </div>
 
@@ -208,43 +230,49 @@ export const EditorTimeline = ({
 
           {/* Timeline Tracks */}
           <ScrollArea className="h-[calc(100%-2rem)]">
-            {mockTimelineLayers.map((layer, index) => (
-              <div key={layer.id} className="h-12 border-b border-border/50 relative">
-                {/* Layer Track Background */}
-                <div className="absolute inset-0 flex">
-                  {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => (
-                    <div key={i} className="flex-shrink-0 w-20 border-r border-border/20" />
-                  ))}
-                </div>
-
-                {/* Layer Block */}
-                <div
-                  className={`absolute top-1 bottom-1 rounded-md border-2 transition-all cursor-pointer ${
-                    selectedLayer === layer.id 
-                      ? 'border-primary bg-primary/20' 
-                      : 'border-transparent hover:border-primary/50'
-                  }`}
-                  style={{
-                    left: `${(layer.startTime / duration) * (Math.ceil(duration) * 80)}px`,
-                    width: `${((layer.endTime - layer.startTime) / duration) * (Math.ceil(duration) * 80)}px`,
-                    backgroundColor: `${layer.color}20`
-                  }}
-                  onClick={() => onLayerSelect(layer.id)}
-                >
-                  <div className="h-full flex items-center px-2">
-                    <span className="text-xs text-foreground font-medium truncate">
-                      {layer.name}
-                    </span>
+            {tracks.map((track) => {
+              const trackItems = items.filter(item => item.track_id === track.id);
+              return (
+                <div key={track.id} className="h-12 border-b border-border/50 relative">
+                  {/* Track Background */}
+                  <div className="absolute inset-0 flex">
+                    {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => (
+                      <div key={i} className="flex-shrink-0 w-20 border-r border-border/20" />
+                    ))}
                   </div>
-                </div>
 
-                {/* Playhead */}
-                <div
-                  className="absolute top-0 bottom-0 w-px bg-primary z-10 pointer-events-none"
-                  style={{ left: `${(currentTime / duration) * (Math.ceil(duration) * 80)}px` }}
-                />
-              </div>
-            ))}
+                  {/* Track Items */}
+                  {trackItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`absolute top-1 bottom-1 rounded-md border-2 transition-all cursor-pointer ${
+                        selectedLayer === item.id 
+                          ? 'border-primary bg-primary/20' 
+                          : 'border-transparent hover:border-primary/50'
+                      }`}
+                      style={{
+                        left: `${(item.start_time / 1000 / duration) * (Math.ceil(duration) * 80)}px`,
+                        width: `${(item.duration / 1000 / duration) * (Math.ceil(duration) * 80)}px`,
+                        backgroundColor: 'hsl(var(--primary) / 0.2)'
+                      }}
+                      onClick={() => onLayerSelect(item.id)}
+                    >
+                      <div className="h-full flex items-center px-2">
+                        <span className="text-xs text-foreground font-medium truncate">
+                          Item {item.id.slice(0, 8)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Playhead */}
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-primary z-10 pointer-events-none"
+                    style={{ left: `${(currentTime / duration) * (Math.ceil(duration) * 80)}px` }}
+                  />
+                </div>
+              );
+            })}
           </ScrollArea>
         </div>
       </div>

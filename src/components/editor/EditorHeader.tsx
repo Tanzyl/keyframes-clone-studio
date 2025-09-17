@@ -32,7 +32,7 @@ interface EditorHeaderProps {
 
 export const EditorHeader = ({ currentProject, onProjectSave, projects }: EditorHeaderProps) => {
   const { user, signOut } = useAuth();
-  const [projectName, setProjectName] = useState(currentProject?.title || "Untitled Project");
+  const [projectName, setProjectName] = useState(currentProject?.name || "Untitled Project");
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handleSignOut = async () => {

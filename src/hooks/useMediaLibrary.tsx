@@ -2,36 +2,30 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
+import type { Tables, TablesInsert } from '@/integrations/supabase/types'
 
-export interface MediaFile {
-  id: string
-  filename: string
-  file_path: string
-  file_type: string
-  file_size: number
-  user_id: string
-  created_at: string
-}
+export type MediaAsset = Tables<'media_assets'>
+export type MediaAssetInsert = TablesInsert<'media_assets'>
 
-export const useMediaLibrary = () => {
+export const useMediaLibrary = (workspaceId?: string) => {
   const { user } = useAuth()
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  const fetchMediaFiles = async () => {
-    if (!user) return
+  const fetchMediaAssets = async () => {
+    if (!user || !workspaceId) return
 
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('media_files')
+        .from('media_assets')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setMediaFiles(data || [])
+      setMediaAssets(data || [])
     } catch (error: any) {
       toast({
         title: "Error",
@@ -43,39 +37,50 @@ export const useMediaLibrary = () => {
     }
   }
 
-  const uploadFile = async (file: File) => {
-    if (!user) return null
+  const uploadFile = async (file: File, projectId?: string) => {
+    if (!user || !workspaceId) return null
 
     setUploading(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`
+      const fileName = `${workspaceId}/${user.id}/${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
-        .from('media')
+        .from('media-assets')
         .upload(fileName, file)
 
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage
-        .from('media')
+        .from('media-assets')
         .getPublicUrl(fileName)
 
+      // Determine media type
+      let mediaType: 'image' | 'video' | 'audio' | 'font' | 'element' | 'transition' | 'sticker' = 'element'
+      if (file.type.startsWith('image/')) mediaType = 'image'
+      else if (file.type.startsWith('video/')) mediaType = 'video'
+      else if (file.type.startsWith('audio/')) mediaType = 'audio'
+
       const { data, error } = await supabase
-        .from('media_files')
+        .from('media_assets')
         .insert({
-          filename: file.name,
-          file_path: urlData.publicUrl,
-          file_type: file.type,
+          name: file.name.split('.')[0],
+          original_name: file.name,
+          file_path: fileName,
+          file_url: urlData.publicUrl,
+          mime_type: file.type,
           file_size: file.size,
-          user_id: user.id,
+          media_type: mediaType,
+          workspace_id: workspaceId,
+          project_id: projectId || null,
+          uploaded_by: user.id,
         })
         .select()
         .single()
 
       if (error) throw error
 
-      await fetchMediaFiles()
+      await fetchMediaAssets()
       toast({
         title: "Success",
         description: "File uploaded successfully",
@@ -98,26 +103,20 @@ export const useMediaLibrary = () => {
     if (!user) return false
 
     try {
-      // Extract file name from path
-      const fileName = filePath.split('/').pop()
+      const { error: storageError } = await supabase.storage
+        .from('media-assets')
+        .remove([filePath])
       
-      if (fileName) {
-        const { error: storageError } = await supabase.storage
-          .from('media')
-          .remove([`${user.id}/${fileName}`])
-        
-        if (storageError) throw storageError
-      }
+      if (storageError) throw storageError
 
       const { error } = await supabase
-        .from('media_files')
+        .from('media_assets')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
 
       if (error) throw error
 
-      await fetchMediaFiles()
+      await fetchMediaAssets()
       toast({
         title: "Success",
         description: "File deleted successfully",
@@ -135,15 +134,15 @@ export const useMediaLibrary = () => {
   }
 
   useEffect(() => {
-    fetchMediaFiles()
-  }, [user])
+    fetchMediaAssets()
+  }, [user, workspaceId])
 
   return {
-    mediaFiles,
+    mediaAssets,
     loading,
     uploading,
     uploadFile,
     deleteFile,
-    refetch: fetchMediaFiles,
+    refetch: fetchMediaAssets,
   }
 }

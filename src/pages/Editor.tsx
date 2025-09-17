@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useProjects, Project } from "@/hooks/useProjects";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { useTimeline } from "@/hooks/useTimeline";
 import { EditorHeader } from "@/components/editor/EditorHeader";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
@@ -13,7 +16,9 @@ import { Loader2 } from "lucide-react";
 export default function Editor() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { projects, createProject, updateProject } = useProjects();
+  const { workspaces, currentWorkspace, createWorkspace } = useWorkspaces();
+  const { projects, createProject, updateProject } = useProjects(currentWorkspace?.id);
+  const { mediaAssets } = useMediaLibrary(currentWorkspace?.id);
   
   const [selectedTool, setSelectedTool] = useState("select");
   const [currentTime, setCurrentTime] = useState(0);
@@ -22,6 +27,8 @@ export default function Editor() {
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  
+  const { tracks, items } = useTimeline(currentProject?.id);
 
   // Auto-save project data
   useEffect(() => {
@@ -29,11 +36,13 @@ export default function Editor() {
 
     const autoSaveTimer = setTimeout(() => {
       updateProject(currentProject.id, {
-        data: {
-          layers: [], // This would contain actual layer data
-          duration,
-          currentTime,
-          selectedLayer,
+        canvas_data: {
+          ...(currentProject.canvas_data as any),
+          duration: duration * 1000, // Convert to milliseconds
+        },
+        timeline_data: {
+          ...(currentProject.timeline_data as any),
+          duration: duration * 1000,
         }
       });
     }, 2000);
@@ -48,9 +57,20 @@ export default function Editor() {
     }
   }, [user, authLoading, navigate]);
 
+  // Create default workspace and project for new users
+  useEffect(() => {
+    if (user && workspaces.length === 0) {
+      createWorkspace("My Workspace", "Default workspace").then((workspace) => {
+        if (workspace) {
+          // Workspace creation will be handled by useWorkspaces hook
+        }
+      });
+    }
+  }, [user, workspaces, createWorkspace]);
+
   // Create a demo project for new users
   useEffect(() => {
-    if (user && projects.length === 0) {
+    if (user && currentWorkspace && projects.length === 0) {
       createProject("Demo Project", "Your first video project").then((project) => {
         if (project) {
           setCurrentProject(project);
@@ -59,7 +79,7 @@ export default function Editor() {
     } else if (projects.length > 0 && !currentProject) {
       setCurrentProject(projects[0]);
     }
-  }, [user, projects, currentProject, createProject]);
+  }, [user, currentWorkspace, projects, currentProject, createProject]);
 
   if (authLoading) {
     return (
@@ -87,7 +107,11 @@ export default function Editor() {
       
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <EditorSidebar />
+        <EditorSidebar 
+          mediaAssets={mediaAssets}
+          currentProject={currentProject}
+          currentWorkspace={currentWorkspace}
+        />
         
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -119,6 +143,8 @@ export default function Editor() {
             selectedLayer={selectedLayer}
             onLayerSelect={setSelectedLayer}
             currentProject={currentProject}
+            tracks={tracks}
+            items={items}
           />
         </div>
       </div>

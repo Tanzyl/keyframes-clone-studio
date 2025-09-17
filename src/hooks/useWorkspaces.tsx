@@ -4,27 +4,32 @@ import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import type { Tables, TablesInsert } from '@/integrations/supabase/types'
 
-export type Project = Tables<'projects'>
-export type ProjectInsert = TablesInsert<'projects'>
+export type Workspace = Tables<'workspaces'>
+export type WorkspaceInsert = TablesInsert<'workspaces'>
 
-export const useProjects = (workspaceId?: string) => {
+export const useWorkspaces = () => {
   const { user } = useAuth()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const fetchProjects = async () => {
-    if (!user || !workspaceId) return
+  const fetchWorkspaces = async () => {
+    if (!user) return
 
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('projects')
+        .from('workspaces')
         .select('*')
-        .eq('workspace_id', workspaceId)
         .order('updated_at', { ascending: false })
 
       if (error) throw error
-      setProjects(data || [])
+      setWorkspaces(data || [])
+      
+      // Set first workspace as current if none selected
+      if (data && data.length > 0 && !currentWorkspace) {
+        setCurrentWorkspace(data[0])
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -36,44 +41,40 @@ export const useProjects = (workspaceId?: string) => {
     }
   }
 
-  const createProject = async (name: string, description?: string) => {
-    if (!user || !workspaceId) return null
+  const createWorkspace = async (name: string, description?: string) => {
+    if (!user) return null
 
     try {
-      const { data, error } = await supabase
-        .from('projects')
+      const { data: workspace, error: workspaceError } = await supabase
+        .from('workspaces')
         .insert({
           name,
           description,
-          workspace_id: workspaceId,
           owner_id: user.id,
-          canvas_data: {
-            fps: 30,
-            layers: [],
-            duration: 10000,
-            resolution: { width: 1920, height: 1080 }
-          },
-          timeline_data: {
-            tracks: [],
-            duration: 10000
-          },
-          settings: {
-            quality: "high",
-            autoSave: true
-          }
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (workspaceError) throw workspaceError
+
+      // Add user as owner to workspace_members
+      const { error: memberError } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: workspace.id,
+          user_id: user.id,
+          role: 'owner'
+        })
+
+      if (memberError) throw memberError
       
-      await fetchProjects()
+      await fetchWorkspaces()
       toast({
         title: "Success",
-        description: "Project created successfully",
+        description: "Workspace created successfully",
       })
       
-      return data
+      return workspace
     } catch (error: any) {
       toast({
         title: "Error",
@@ -84,18 +85,18 @@ export const useProjects = (workspaceId?: string) => {
     }
   }
 
-  const updateProject = async (id: string, updates: Partial<ProjectInsert>) => {
+  const updateWorkspace = async (id: string, updates: Partial<WorkspaceInsert>) => {
     if (!user) return false
 
     try {
       const { error } = await supabase
-        .from('projects')
+        .from('workspaces')
         .update(updates)
         .eq('id', id)
 
       if (error) throw error
       
-      await fetchProjects()
+      await fetchWorkspaces()
       return true
     } catch (error: any) {
       toast({
@@ -107,21 +108,21 @@ export const useProjects = (workspaceId?: string) => {
     }
   }
 
-  const deleteProject = async (id: string) => {
+  const deleteWorkspace = async (id: string) => {
     if (!user) return false
 
     try {
       const { error } = await supabase
-        .from('projects')
+        .from('workspaces')
         .delete()
         .eq('id', id)
 
       if (error) throw error
       
-      await fetchProjects()
+      await fetchWorkspaces()
       toast({
         title: "Success",
-        description: "Project deleted successfully",
+        description: "Workspace deleted successfully",
       })
       
       return true
@@ -136,15 +137,17 @@ export const useProjects = (workspaceId?: string) => {
   }
 
   useEffect(() => {
-    fetchProjects()
-  }, [user, workspaceId])
+    fetchWorkspaces()
+  }, [user])
 
   return {
-    projects,
+    workspaces,
+    currentWorkspace,
+    setCurrentWorkspace,
     loading,
-    createProject,
-    updateProject,
-    deleteProject,
-    refetch: fetchProjects,
+    createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
+    refetch: fetchWorkspaces,
   }
 }
