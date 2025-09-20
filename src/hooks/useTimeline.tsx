@@ -16,7 +16,14 @@ export const useTimeline = (projectId?: string) => {
   const [loading, setLoading] = useState(false)
 
   const fetchTimeline = async () => {
-    if (!user || !projectId) return
+    if (!user || !projectId) {
+      // Provide demo timeline data for unauthenticated users
+      if (projectId === 'demo-project') {
+        setTracks([]);
+        setItems([]);
+      }
+      return;
+    }
 
     setLoading(true)
     try {

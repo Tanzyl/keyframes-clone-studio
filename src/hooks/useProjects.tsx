@@ -13,7 +13,38 @@ export const useProjects = (workspaceId?: string) => {
   const [loading, setLoading] = useState(false)
 
   const fetchProjects = async () => {
-    if (!user || !workspaceId) return
+    if (!user || !workspaceId) {
+      // Provide demo project for unauthenticated users
+      if (workspaceId === 'demo-workspace') {
+        const demoProject = {
+          id: 'demo-project',
+          name: 'Demo Project',
+          description: 'Your first video project',
+          workspace_id: 'demo-workspace',
+          owner_id: 'demo-user',
+          canvas_data: {
+            fps: 30,
+            layers: [],
+            duration: 30000,
+            resolution: { width: 1920, height: 1080 }
+          },
+          timeline_data: {
+            tracks: [],
+            duration: 30000
+          },
+          settings: {
+            quality: "high",
+            autoSave: true
+          },
+          status: 'draft',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          thumbnail_url: null
+        };
+        setProjects([demoProject as any]);
+      }
+      return;
+    }
 
     setLoading(true)
     try {

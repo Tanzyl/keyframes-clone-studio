@@ -50,36 +50,63 @@ export default function Editor() {
     return () => clearTimeout(autoSaveTimer);
   }, [currentProject, duration, currentTime, selectedLayer, autoSaveEnabled, updateProject]);
 
-  // Redirect to auth if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
+  // Skip authentication for now
+  // useEffect(() => {
+  //   if (!authLoading && !user) {
+  //     navigate('/auth');
+  //   }
+  // }, [user, authLoading, navigate]);
 
-  // Create default workspace and project for new users
+  // Create default workspace and project for demo mode
   useEffect(() => {
-    if (user && workspaces.length === 0) {
-      createWorkspace("My Workspace", "Default workspace").then((workspace) => {
-        if (workspace) {
-          // Workspace creation will be handled by useWorkspaces hook
-        }
-      });
+    if (workspaces.length === 0) {
+      // Demo workspace data for offline mode
+      const demoWorkspace = {
+        id: 'demo-workspace',
+        name: 'Demo Workspace',
+        description: 'Demo workspace for testing',
+        owner_id: 'demo-user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      // In real implementation, this would come from the backend
     }
-  }, [user, workspaces, createWorkspace]);
+  }, [workspaces, createWorkspace]);
 
-  // Create a demo project for new users
+  // Create a demo project for users
   useEffect(() => {
-    if (user && currentWorkspace && projects.length === 0) {
-      createProject("Demo Project", "Your first video project").then((project) => {
-        if (project) {
-          setCurrentProject(project);
-        }
-      });
+    if (projects.length === 0 && !currentProject) {
+      // Demo project data for offline mode
+      const demoProject = {
+        id: 'demo-project',
+        name: 'Demo Project',
+        description: 'Your first video project',
+        workspace_id: 'demo-workspace',
+        owner_id: 'demo-user',
+        canvas_data: {
+          fps: 30,
+          layers: [],
+          duration: 30000,
+          resolution: { width: 1920, height: 1080 }
+        },
+        timeline_data: {
+          tracks: [],
+          duration: 30000
+        },
+        settings: {
+          quality: "high",
+          autoSave: true
+        },
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        thumbnail_url: null
+      };
+      setCurrentProject(demoProject as any);
     } else if (projects.length > 0 && !currentProject) {
       setCurrentProject(projects[0]);
     }
-  }, [user, currentWorkspace, projects, currentProject, createProject]);
+  }, [projects, currentProject, createProject]);
 
   if (authLoading) {
     return (
@@ -92,9 +119,10 @@ export default function Editor() {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect to auth
-  }
+  // Allow demo mode without authentication
+  // if (!user) {
+  //   return null; // Will redirect to auth
+  // }
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">

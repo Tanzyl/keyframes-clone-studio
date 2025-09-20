@@ -14,7 +14,13 @@ export const useMediaLibrary = (workspaceId?: string) => {
   const [uploading, setUploading] = useState(false)
 
   const fetchMediaAssets = async () => {
-    if (!user || !workspaceId) return
+    if (!user || !workspaceId) {
+      // Provide demo media assets for unauthenticated users
+      if (workspaceId === 'demo-workspace') {
+        setMediaAssets([]);
+      }
+      return;
+    }
 
     setLoading(true)
     try {

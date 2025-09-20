@@ -14,7 +14,20 @@ export const useWorkspaces = () => {
   const [loading, setLoading] = useState(false)
 
   const fetchWorkspaces = async () => {
-    if (!user) return
+    if (!user) {
+      // Provide demo workspace for unauthenticated users
+      const demoWorkspace = {
+        id: 'demo-workspace',
+        name: 'Demo Workspace',
+        description: 'Demo workspace for testing',
+        owner_id: 'demo-user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setWorkspaces([demoWorkspace as any]);
+      setCurrentWorkspace(demoWorkspace as any);
+      return;
+    }
 
     setLoading(true)
     try {
