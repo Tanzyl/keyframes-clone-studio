@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { ExportDialog } from "./ExportDialog";
 
 interface EditorHeaderProps {
   currentProject: Project | null;
@@ -88,6 +89,13 @@ export const EditorHeader = ({ currentProject, onProjectSave, projects }: Editor
           Save
         </Button>
         
+        <ExportDialog currentProject={currentProject}>
+          <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        </ExportDialog>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">
@@ -98,16 +106,12 @@ export const EditorHeader = ({ currentProject, onProjectSave, projects }: Editor
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem>
-              <Download className="h-4 w-4 mr-2" />
-              Export Video
-            </DropdownMenuItem>
-            <DropdownMenuItem>
               <Share2 className="h-4 w-4 mr-2" />
               Share Link
             </DropdownMenuItem>
             <DropdownMenuItem>
               <FileText className="h-4 w-4 mr-2" />
-              Export GIF
+              Publish to Web
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

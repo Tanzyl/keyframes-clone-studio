@@ -7,7 +7,7 @@ import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { useTimeline } from "@/hooks/useTimeline";
 import { EditorHeader } from "@/components/editor/EditorHeader";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
-import { EditorCanvas } from "@/components/editor/EditorCanvas";
+import { VideoCanvas } from "@/components/editor/VideoCanvas";
 import { EditorTimeline } from "@/components/editor/EditorTimeline";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { Button } from "@/components/ui/button";
@@ -151,12 +151,14 @@ export default function Editor() {
           
           {/* Canvas */}
           <div className="flex-1 flex overflow-hidden">
-            <EditorCanvas
+            <VideoCanvas
               selectedTool={selectedTool}
               currentTime={currentTime}
               selectedLayer={selectedLayer}
               onLayerSelect={setSelectedLayer}
               currentProject={currentProject}
+              isPlaying={isPlaying}
+              onTimelineChange={setCurrentTime}
             />
           </div>
           

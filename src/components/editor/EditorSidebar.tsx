@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMediaLibrary, MediaAsset } from "@/hooks/useMediaLibrary";
 import { Project } from "@/hooks/useProjects";
 import { Workspace } from "@/hooks/useWorkspaces";
+import { VideoUpload } from "./VideoUpload";
+import { toast } from "@/hooks/use-toast";
 import { 
   Search,
   Type,
@@ -115,23 +117,16 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
         <div className="flex-1 overflow-hidden">
           <TabsContent value="media" className="h-full m-0">
             <div className="p-4 space-y-4 h-full flex flex-col">
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*,audio/*"
-                onChange={handleFileUpload}
-                className="hidden"
+              <VideoUpload 
+                workspaceId={currentWorkspace?.id}
+                projectId={currentProject?.id}
+                onUploadComplete={(asset) => {
+                  toast({
+                    title: "Media Added",
+                    description: "File has been added to your media library",
+                  });
+                }}
               />
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {uploading ? "Uploading..." : "Upload Media"}
-              </Button>
               
               <div className="flex space-x-2">
                 <Button 
@@ -188,6 +183,7 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
                       className="relative group cursor-pointer border border-border rounded-lg p-2 hover:bg-surface-2 transition-colors"
                       draggable
                       onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', asset.file_url || '');
                         e.dataTransfer.setData('application/json', JSON.stringify(asset));
                       }}
                     >
