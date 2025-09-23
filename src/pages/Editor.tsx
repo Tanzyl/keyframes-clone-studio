@@ -11,6 +11,7 @@ import { VideoCanvas } from "@/components/editor/VideoCanvas";
 import { EditorTimeline } from "@/components/editor/EditorTimeline";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { Button } from "@/components/ui/button";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Loader2 } from "lucide-react";
 
 export default function Editor() {
@@ -133,51 +134,66 @@ export default function Editor() {
         projects={projects}
       />
       
-      <div className="flex flex-1 overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar */}
-        <EditorSidebar 
-          mediaAssets={mediaAssets}
-          currentProject={currentProject}
-          currentWorkspace={currentWorkspace}
-        />
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+          <EditorSidebar 
+            mediaAssets={mediaAssets}
+            currentProject={currentProject}
+            currentWorkspace={currentWorkspace}
+          />
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
         
         {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Toolbar */}
-          <EditorToolbar 
-            selectedTool={selectedTool}
-            onToolSelect={setSelectedTool}
-          />
-          
-          {/* Canvas */}
-          <div className="flex-1 flex overflow-hidden">
-            <VideoCanvas
-              selectedTool={selectedTool}
-              currentTime={currentTime}
-              selectedLayer={selectedLayer}
-              onLayerSelect={setSelectedLayer}
-              currentProject={currentProject}
-              isPlaying={isPlaying}
-              onTimelineChange={setCurrentTime}
-            />
-          </div>
-          
-          {/* Timeline */}
-          <EditorTimeline
-            currentTime={currentTime}
-            duration={duration}
-            isPlaying={isPlaying}
-            onTimeChange={setCurrentTime}
-            onDurationChange={setDuration}
-            onPlayPause={() => setIsPlaying(!isPlaying)}
-            selectedLayer={selectedLayer}
-            onLayerSelect={setSelectedLayer}
-            currentProject={currentProject}
-            tracks={tracks}
-            items={items}
-          />
-        </div>
-      </div>
+        <ResizablePanel defaultSize={80}>
+          <ResizablePanelGroup direction="vertical">
+            {/* Toolbar and Canvas */}
+            <ResizablePanel defaultSize={75} minSize={40}>
+              <div className="flex flex-col h-full">
+                {/* Toolbar */}
+                <EditorToolbar 
+                  selectedTool={selectedTool}
+                  onToolSelect={setSelectedTool}
+                />
+                
+                {/* Canvas */}
+                <div className="flex-1 overflow-hidden">
+                  <VideoCanvas
+                    selectedTool={selectedTool}
+                    currentTime={currentTime}
+                    selectedLayer={selectedLayer}
+                    onLayerSelect={setSelectedLayer}
+                    currentProject={currentProject}
+                    isPlaying={isPlaying}
+                    onTimelineChange={setCurrentTime}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
+            
+            {/* Timeline */}
+            <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
+              <EditorTimeline
+                currentTime={currentTime}
+                duration={duration}
+                isPlaying={isPlaying}
+                onTimeChange={setCurrentTime}
+                onDurationChange={setDuration}
+                onPlayPause={() => setIsPlaying(!isPlaying)}
+                selectedLayer={selectedLayer}
+                onLayerSelect={setSelectedLayer}
+                currentProject={currentProject}
+                tracks={tracks}
+                items={items}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
