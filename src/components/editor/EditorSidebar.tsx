@@ -31,6 +31,8 @@ interface EditorSidebarProps {
   mediaAssets: MediaAsset[];
   currentProject: Project | null;
   currentWorkspace: Workspace | null;
+  onToolSelect?: (tool: string) => void;
+  onAddElement?: (element: any) => void;
 }
 
 const textTemplates = [
@@ -46,7 +48,7 @@ const shapes = [
   { id: 4, name: "Arrow", icon: "→" },
 ];
 
-export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }: EditorSidebarProps) => {
+export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace, onToolSelect, onAddElement }: EditorSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -237,7 +239,14 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
 
               <TabsContent value="text" className="h-full m-0">
                 <div className="p-4 space-y-4 h-full flex flex-col">
-                  <Button className="w-full" variant="outline">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => {
+                      onToolSelect?.('text');
+                      onAddElement?.({ type: 'text', content: 'Your Text Here' });
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Text
                   </Button>
@@ -248,6 +257,16 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
                         <div
                           key={template.id}
                           className="border border-border rounded-lg p-3 hover:bg-surface-2 cursor-pointer transition-colors"
+                          onClick={() => {
+                            onToolSelect?.('text');
+                            onAddElement?.({ 
+                              type: 'text', 
+                              content: template.preview,
+                              template: template.name,
+                              fontSize: template.name.includes('Title') ? 32 : 24,
+                              fontWeight: template.name.includes('Title') ? 'bold' : 'normal'
+                            });
+                          }}
                         >
                           <div className="font-medium text-sm mb-1">{template.name}</div>
                           <div className="text-xs text-muted-foreground bg-surface-2 rounded px-2 py-1">
@@ -268,6 +287,16 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
                         <div
                           key={shape.id}
                           className="aspect-square border border-border rounded-lg flex flex-col items-center justify-center hover:bg-surface-2 cursor-pointer transition-colors"
+                          onClick={() => {
+                            onToolSelect?.(shape.name.toLowerCase());
+                            onAddElement?.({ 
+                              type: 'shape', 
+                              shapeType: shape.name.toLowerCase(),
+                              fill: shape.name === 'Rectangle' ? '#3b82f6' : 
+                                    shape.name === 'Circle' ? '#ef4444' : 
+                                    shape.name === 'Triangle' ? '#10b981' : '#8b5cf6'
+                            });
+                          }}
                         >
                           <div className="text-2xl mb-1">{shape.icon}</div>
                           <div className="text-xs text-muted-foreground">{shape.name}</div>
@@ -280,7 +309,19 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
 
               <TabsContent value="ai" className="h-full m-0">
                 <div className="p-4 space-y-4 h-full flex flex-col">
-                  <Button className="w-full btn-hero">
+                  <Button 
+                    className="w-full btn-hero"
+                    onClick={() => {
+                      onAddElement?.({ 
+                        type: 'ai-generated', 
+                        prompt: 'Generate a creative scene' 
+                      });
+                      toast({
+                        title: "AI Generation Started",
+                        description: "Creating AI-generated content...",
+                      });
+                    }}
+                  >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Generate with AI
                   </Button>
@@ -291,7 +332,21 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
                       <div className="text-xs text-muted-foreground mb-2">
                         Create scenes with AI prompts
                       </div>
-                      <Button size="sm" variant="outline" className="w-full">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          onAddElement?.({ 
+                            type: 'ai-scene', 
+                            prompt: 'Create a cinematic scene' 
+                          });
+                          toast({
+                            title: "AI Scene Generation",
+                            description: "Generating AI scene...",
+                          });
+                        }}
+                      >
                         Try Now
                       </Button>
                     </div>
@@ -301,7 +356,22 @@ export const EditorSidebar = ({ mediaAssets, currentProject, currentWorkspace }:
                       <div className="text-xs text-muted-foreground mb-2">
                         Smart keyframe generation
                       </div>
-                      <Button size="sm" variant="outline" className="w-full">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          onAddElement?.({ 
+                            type: 'auto-animation',
+                            duration: 2000,
+                            effect: 'fade-in'
+                          });
+                          toast({
+                            title: "Auto Animation Applied",
+                            description: "Smart keyframes generated",
+                          });
+                        }}
+                      >
                         Apply
                       </Button>
                     </div>
