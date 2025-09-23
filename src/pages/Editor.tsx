@@ -29,11 +29,6 @@ export default function Editor() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
-  const handleAddElement = (element: any) => {
-    // Add element to canvas - this will be handled by VideoCanvas
-    console.log('Adding element:', element);
-  };
-  
   const { tracks, items } = useTimeline(currentProject?.id);
 
   // Auto-save project data
@@ -146,8 +141,6 @@ export default function Editor() {
             mediaAssets={mediaAssets}
             currentProject={currentProject}
             currentWorkspace={currentWorkspace}
-            onToolSelect={setSelectedTool}
-            onAddElement={handleAddElement}
           />
         </ResizablePanel>
         
